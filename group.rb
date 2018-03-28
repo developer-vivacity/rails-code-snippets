@@ -129,54 +129,53 @@ class Group < ActiveRecord::Base
                 end
               end 
       puts "XXXXXXXXXXXXXXXXXXXXXX"
-    end
+  end
 
-    # shutting down the job on aws(daily basis)
-    def shutdown(group)
-      cfmshutdown = AWS::CloudFormation.new
-      ec2shutdown = AWS::EC2.new
-      puts "XXXXXXXXXX DAILY CHECKING HERE SHUT DOWN XXXXXXXXXXXX"
-      puts  group.name
-      puts "Shut down Job is working now"
-      puts group.users.length
-      puts "-------------"
-          if group.users.length > 0
-            allinstanceids = []
-              group.users.each do |user|
-                if user.stacks.length > 0
-                  user.stacks.each do |stack|
-                    if stack.ec2instance_ids.length > 0 
-                    allinstanceids.concat stack.ec2instance_ids
-                    end
+  # shutting down the job on aws(daily basis)
+  def shutdown(group)
+    cfmshutdown = AWS::CloudFormation.new
+    ec2shutdown = AWS::EC2.new
+    puts "XXXXXXXXXX DAILY CHECKING HERE SHUT DOWN XXXXXXXXXXXX"
+    puts  group.name
+    puts "Shut down Job is working now"
+    puts group.users.length
+    puts "-------------"
+        if group.users.length > 0
+          allinstanceids = []
+            group.users.each do |user|
+              if user.stacks.length > 0
+                user.stacks.each do |stack|
+                  if stack.ec2instance_ids.length > 0 
+                  allinstanceids.concat stack.ec2instance_ids
                   end
                 end
               end
-            puts "BUBBBUBUBBBB"
-            puts allinstanceids.class
-            allinstanceids = allinstanceids.uniq
-            puts allinstanceids.class
-            puts "BUBBBUBUBBBB"
-            if allinstanceids.length > 0
-             $ec2_resource.instances({instance_ids: allinstanceids}).batch_stop # To job stop
             end
-          end 
-      puts "YYYYYYYYYYYYYYYYYYYYYYYY"
+          puts "BUBBBUBUBBBB"
+          puts allinstanceids.class
+          allinstanceids = allinstanceids.uniq
+          puts allinstanceids.class
+          puts "BUBBBUBUBBBB"
+          if allinstanceids.length > 0
+           $ec2_resource.instances({instance_ids: allinstanceids}).batch_stop # To job stop
+          end
+        end 
+    puts "YYYYYYYYYYYYYYYYYYYYYYYY"
+  end
+
+
+
+  # to run startup and shutdown methods in background
+  handle_asynchronously :startup
+  handle_asynchronously :shutdown
+
+ protected
+  # generates a secure random token with base 64 encoding
+  def generate_token
+    loop do
+      random_token = SecureRandom.urlsafe_base64(nil, false)
+      break random_token unless self.class.exists?(invite_code: random_token)
     end
-
-
-
-    # to run startup and shutdown methods in background
-    handle_asynchronously :startup
-    handle_asynchronously :shutdown
-
-   protected
-    # generates a secure random token with base 64 encoding
-    def generate_token
-      loop do
-        random_token = SecureRandom.urlsafe_base64(nil, false)
-        break random_token unless self.class.exists?(invite_code: random_token)
-      end
-    end
-
+  end
 
 end
